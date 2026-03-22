@@ -32,10 +32,10 @@ module mmacu #(
 ); 
     /*
     For flow control we use a weak model to faciliate lower latency, higher throughput, and portability
-    Preload, Compute, and Unload are independent phases by design - it is in driver's scope to schedule them
+    Preload, Compute, and Unload are independent phases by design - driver should schedule them
     -------------
     1. A/B streams are synced by construct.
-    2. A/B and C sterams can be either: (C is synced to A/B)
+    2. A/B and C streams can be either: (C is synced to A/B)
         i.  Sync  - can be used to load coupled load at the i_start for lower latency
         ii. Async - can be used to preload C to reduce memory bandwidth
     3. A/B and D streams are lockstep-synced. (A/B is synced to D)
@@ -93,15 +93,15 @@ module mmacu #(
     logic [WIDTH_CD-1:0]          wn_d            [M][M];
     logic                         wn_done         [M][M];
 
-    // choose the wn_done column that pointed by the i_uload_dim-1 that say who are valid to unload
-    // if in that column's i th row is 1 we can unload i th row from the wn_d then we should pull valid let cosumer consume
-    // but if he donesnt do lockstep pull global_stall_n to low to introdue backpressure
+    // choose the wn_done column that pointed by the i_uload_dim-1 that say which is valid to unload
+    // if in that column's i th row is 1 we can unload i th row from the wn_d then, we should pull valid let cosumer know it is valid to consume
+    // but if he doesn't consume, pull global_stall_n low, introducing backpressure
     
     always_comb begin
         w_uload_mask_vec = '0; 
-    for (int k = 0; k < M; k++) begin
-        w_uload_mask_vec[k] = wn_done[k][i_uload_dim-1];
-    end
+        for (int k = 0; k < M; k++) begin
+            w_uload_mask_vec[k] = wn_done[k][i_uload_dim-1];
+        end
     end
     always_ff @(posedge i_clk or negedge i_rst_n) begin
             if (!i_rst_n || !i_clr_n) begin
@@ -134,7 +134,7 @@ module mmacu #(
     generate
         for (i = 0; i < M; i++) begin : ROW
             for (j = 0; j < M; j++) begin : COL
-                mac #(WIDTH_AB, WIDTH_CD) u_mac (
+                mac10 #(WIDTH_AB, WIDTH_CD, M) u_mac (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
