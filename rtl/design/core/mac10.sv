@@ -1,4 +1,4 @@
-// (m-lat, a-lat)
+// (mul-lat, add-lat)
 // (1, 0) mac
 module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16)(
     input  logic                    i_clk,
@@ -105,7 +105,6 @@ module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16)(
 
 
 
-
     ///////////////////////////////////////////////
     // Stage 2 >>>
     ///////////////////////////////////////////////
@@ -134,6 +133,7 @@ module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16)(
 
     ///////////////////////////////////////////////
     // Decoupled Delay Pipe
+    // delay = m+1 if # uncollapsed stages < (m+1)
     ///////////////////////////////////////////////
     delayed_pipe #(.WIDTH (1), .DEPTH (5)) u_delay_a (
         .i_clk     (i_clk),
@@ -197,13 +197,13 @@ generate
         assign r_d[0] = i_in;
         genvar k;
         for (k = 0; k < DEPTH; k++) begin : DELAY
-            regstr #(WIDTH) u_sr (
+            register #(WIDTH) u_sr (
                 .i_clk     (i_clk),
                 .i_rst_n   (i_rst_n),
                 .i_en      (i_en),
                 .i_clr_n   (i_clr_n),
-                .i_in_d    (r_d[k]),
-                .o_out_d   (r_d[k+1])
+                .i_data    (r_d[k]),
+                .o_data    (r_d[k+1])
             );
         end
         assign o_out = r_d[DEPTH];
