@@ -52,3 +52,9 @@ modelsim.ini
 # -------------------------
 *.log
 
+
+# -------------------------
+# Python
+# -------------------------
+tb/directed/__pycache__/
+tb/directed/sim_build/
