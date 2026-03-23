@@ -101,3 +101,40 @@ module add_lat1 #(
         end
     end
 endmodule
+
+module counter #(
+    parameter int WIDTH = 8
+)(
+    input  logic                  i_clk,
+    input  logic                  i_rst_n,
+    input  logic                  i_clr_n,
+    input  logic                  i_en,
+    input  logic                  i_start,
+    input  logic [WIDTH-1:0]      i_cmp,
+    output logic                  o_done
+);
+    logic [WIDTH-1:0] r_cnt;
+    logic             r_running;
+
+    always_ff @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            r_cnt     <= '0;
+            r_running <= 1'b0;
+        end else if (!i_clr_n) begin
+            r_cnt     <= '0;
+            r_running <= 1'b0;
+        end else if (i_en) begin
+            if (i_start) begin
+                r_cnt     <= '0;
+                r_running <= 1'b1;
+            end else if (r_running) begin
+                if (r_cnt == i_cmp) begin
+                    r_running <= 1'b0;
+                end else begin
+                    r_cnt <= r_cnt + 1'b1;
+                end
+            end
+        end
+    end
+    assign o_done = r_running && (r_cnt == i_cmp);
+endmodule
