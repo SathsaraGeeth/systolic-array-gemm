@@ -115,6 +115,28 @@ async def drain_and_clear(dut, M, L=2):
     hb.clr_n.value = 1
     await RisingEdge(hb.clk)
 
+async def collect_outputs(dut, M, WIDTH_CD, storage):
+    hb = dut.hb_bus
+    current_rows = []
+    current_cycles = []
+    cycle = 0
+
+    while True:
+        await RisingEdge(hb.clk)
+
+        if hb.d_valid.value and hb.d_ready.value:
+            d_val = int(hb.d.value)
+            row = [(d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1) for j in range(M)]
+            current_rows.append(row)
+            current_cycles.append(cycle)
+
+            if len(current_rows) == M:
+                storage[tuple(current_cycles)] = current_rows.copy()
+                current_rows.clear()
+                current_cycles.clear()
+
+        cycle += 1
+
 async def monitor(dut, cycles=50):
     hb = dut.hb_bus
 
@@ -149,10 +171,7 @@ async def monitor(dut, cycles=50):
         cocotb.log.info(f"  d         = {int(hb.d.value)}")
 
         d_val = int(hb.d.value)
-        row = [
-            (d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1)
-            for j in range(M)
-        ]
+        row = [(d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1) for j in range(M)]
 
         cocotb.log.info(f"Decoded d = {row}")
 
@@ -163,13 +182,34 @@ async def monitor(dut, cycles=50):
             f"C={int(hb.c_valid.value and hb.c_ready.value)}"
         )
 
+def pretty_print_matrices(matrices):
+    print("\n" + "=" * 80)
+    print("Collected Outputs")
+    print("=" * 80)
+
+    for txn_id, mat in matrices.items():
+        print(f"\n Transaction {txn_id}")
+        print("   Matrix :")
+        if not mat:
+            print("     <empty>")
+            continue
+        col_width = max(len(str(x)) for row in mat for x in row) + 2
+        for row in mat:
+            row_str = " ".join(f"{x:>{col_width}}" for x in row)
+            print(f"     {row_str}")
+
+    print("\n" + "=" * 80)
 
 @cocotb.test()
 async def test_top_mmacu_hb(dut):
     hb = dut.hb_bus
+    DEBUG = False
     cocotb.start_soon(gen_clk(hb.clk))
     await reset(dut)
-    cocotb.start_soon(monitor(dut, 40))
+    cocotb.start_soon(monitor(dut, 40)) if DEBUG else 1+1
+    outputs = dict()
+    cocotb.start_soon(collect_outputs(dut, M, WIDTH_CD, outputs))
+
     A = [
         [1,2,3,4],
         [5,6,7,8],
@@ -201,7 +241,7 @@ async def test_top_mmacu_hb(dut):
     await drive_synced_ab_c(dut, D, D, A)
     await drain_and_clear(dut, M, L)
 
-
+    pretty_print_matrices(outputs)
 
 
 
