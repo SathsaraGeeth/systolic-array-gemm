@@ -138,6 +138,7 @@ module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4)
     // We should design mac to support otherwise stalls needed
     // this supports only fixed size matrices
     // to extend for the variable case, the M+1 should be sz+1 and dynamic
+    // we have a strong assumption here that the mac latnecy > matrix dim
     ///////////////////////////////////////////////
     // delayed_pipe #(.WIDTH (1), .DEPTH (M+1)) u_delay_a (
     //     .i_clk     (i_clk),
