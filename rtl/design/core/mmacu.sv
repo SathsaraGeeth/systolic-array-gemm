@@ -41,6 +41,7 @@ module mmacu #(
     3. A/B and D streams are lockstep-synced. (A/B is synced to D)
         - uArchitectuarly this introduce backpressure to the A/B and sycned C streams
     */
+    
     logic                       w_gstall_n;
     logic                       w_ab_en;
     logic                       w_load_en;
