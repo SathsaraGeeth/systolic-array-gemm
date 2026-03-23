@@ -45,33 +45,35 @@ async def reset(dut):
     hb.clr_n.value = 1
     await RisingEdge(hb.clk)
 
-async def drive_row(dut, a_row, b_row, c_row=None, start=False):
+async def drive_synced_ab_c(dut, A, B, C, M=M):
     hb = dut.hb_bus
 
-    hb.a.value = pack_row(a_row, WIDTH_AB)
-    hb.b.value = pack_row(b_row, WIDTH_AB)
+    for i in range(M):
+        # drive inputs
+        hb.a.value = pack_row(A[i], WIDTH_AB)
+        hb.b.value = pack_row(B[i], WIDTH_AB)
+        hb.c.value = pack_row(C[i], WIDTH_CD)
 
-    hb.a_valid.value = 1
-    hb.b_valid.value = 1
-    if c_row is not None:
-        hb.c.value = pack_row(c_row, WIDTH_CD)
+        hb.dim.value = M
+        hb.start.value = 1 if i == 0 else 0
+
+        # assert valids
+        hb.a_valid.value = 1
+        hb.b_valid.value = 1
         hb.c_valid.value = 1
-    else:
+
+        # wait for handshake
+        while True:
+            await RisingEdge(hb.clk)
+            if (hb.a_ready.value and hb.b_ready.value and hb.c_ready.value):
+                break
+
+        # deassert valids
+        hb.a_valid.value = 0
+        hb.b_valid.value = 0
         hb.c_valid.value = 0
+        hb.start.value = 0
 
-    await RisingEdge(hb.clk)
-
-    hb.start.value = int(start)
-
-    while not (hb.a_ready.value and hb.b_ready.value):
-        await RisingEdge(hb.clk)
-
-    await RisingEdge(hb.clk)
-
-    hb.a_valid.value = 0
-    hb.b_valid.value = 0
-    hb.c_valid.value = 0
-    hb.start.value = 0
 
 async def monitor(dut, cycles=50):
     hb = dut.hb_bus
@@ -79,18 +81,55 @@ async def monitor(dut, cycles=50):
     for i in range(cycles):
         await RisingEdge(hb.clk)
 
-        d_val = int(hb.d.value)
-        row = [(d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1)
-               for j in range(M)]
+        cocotb.log.info("\n" + "=" * 100)
+        cocotb.log.info(f"[Cycle {i}]")
 
-        cocotb.log.info(f"[Cycle {i}] d_valid={int(hb.d_valid.value)} d={row}")
+        cocotb.log.info("Inputs:")
+        cocotb.log.info(f"  rst_n     = {int(hb.rst_n.value)}")
+        cocotb.log.info(f"  clr_n     = {int(hb.clr_n.value)}")
+        cocotb.log.info(f"  start     = {int(hb.start.value)}")
+        cocotb.log.info(f"  dim       = {int(hb.dim.value)}")
+
+        cocotb.log.info(f"  a_valid   = {int(hb.a_valid.value)}")
+        cocotb.log.info(f"  b_valid   = {int(hb.b_valid.value)}")
+        cocotb.log.info(f"  c_valid   = {int(hb.c_valid.value)}")
+
+        cocotb.log.info(f"  a         = {int(hb.a.value)}")
+        cocotb.log.info(f"  b         = {int(hb.b.value)}")
+        cocotb.log.info(f"  c         = {int(hb.c.value)}")
+
+        cocotb.log.info("Ready:")
+        cocotb.log.info(f"  a_ready   = {int(hb.a_ready.value)}")
+        cocotb.log.info(f"  b_ready   = {int(hb.b_ready.value)}")
+        cocotb.log.info(f"  c_ready   = {int(hb.c_ready.value)}")
+
+        cocotb.log.info("Outputs:")
+        cocotb.log.info(f"  d_valid   = {int(hb.d_valid.value)}")
+        cocotb.log.info(f"  d_ready   = {int(hb.d_ready.value)}")
+        cocotb.log.info(f"  d         = {int(hb.d.value)}")
+
+        d_val = int(hb.d.value)
+        row = [
+            (d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1)
+            for j in range(M)
+        ]
+
+        cocotb.log.info(f"Decoded d = {row}")
+
+        cocotb.log.info("Raw handshake:")
+        cocotb.log.info(
+            f"  valid&ready A={int(hb.a_valid.value and hb.a_ready.value)} "
+            f"B={int(hb.b_valid.value and hb.b_ready.value)} "
+            f"C={int(hb.c_valid.value and hb.c_ready.value)}"
+        )
+
 
 @cocotb.test()
 async def test_top_mmacu_hb(dut):
     hb = dut.hb_bus
     cocotb.start_soon(gen_clk(hb.clk))
     await reset(dut)
-    cocotb.start_soon(monitor(dut, 100))
+    cocotb.start_soon(monitor(dut, 2000))
     A = [
         [1,2,3,4],
         [5,6,7,8],
@@ -109,14 +148,21 @@ async def test_top_mmacu_hb(dut):
         [9,10,11,12],
         [13,14,15,16]
     ]
-    for i in range(M):
-        await drive_row(dut, A[i], B[i], C[i], start=(i == 0))
-    # flush pipe
-    for _ in range(100):
-        await drive_row(dut, [0]*M, [0]*M, start=(i == 0))
+    D = [
+        [0, 4, 2, 2],
+        [18,21,1, 2],
+        [1, 0, 19, 33],
+        [5, 1, 2, 2]
+    ]
+    
+    null_matrix = [[0 for _ in range(M)] for _ in range(1000)]
+    
+    await drive_synced_ab_c(dut, A, B, C, M)
+    await drive_synced_ab_c(dut, C, D, A, M)
+    await drive_synced_ab_c(dut, null_matrix, null_matrix, null_matrix, M)
 
-
-
+    for _ in range(10):  # flush the pipe
+        await RisingEdge(hb.clk)
 
 
 
