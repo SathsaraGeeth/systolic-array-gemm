@@ -33,3 +33,7 @@ print("\nD = A^T @ B + C:\n", E)
 F = C.T @ D + A
 
 print("\nF = C^T @ D + A:\n", F)
+
+G = D.T @ D + A
+
+print("\nG = D^T @ D + A:\n", G)

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 M = 4
+L = 2
 WIDTH_AB = 8
 WIDTH_CD = 16
 
@@ -76,6 +77,43 @@ async def drive_synced_ab_c(dut, A, B, C):
         hb.b_valid.value = 0
         hb.c_valid.value = 0
         hb.start.value = 0
+
+async def drain_and_clear(dut, M, L=2):
+    hb = dut.hb_bus
+
+    zero_ab = [0] * M
+    zero_c  = [0] * M
+
+    total_cycles = 2 * M + L - 1
+
+    for i in range(total_cycles):
+        # drive zeros
+        hb.a.value = pack_row(zero_ab, WIDTH_AB)
+        hb.b.value = pack_row(zero_ab, WIDTH_AB)
+        hb.c.value = pack_row(zero_c, WIDTH_CD)
+
+        hb.a_valid.value = 1
+        hb.b_valid.value = 1
+        hb.c_valid.value = 1
+        hb.start.value = i == 0
+        hb.dim.value = M
+
+        # wait handshake
+        while True:
+            await RisingEdge(hb.clk)
+            if (hb.a_ready.value and hb.b_ready.value and hb.c_ready.value):
+                break
+
+        # deassert
+        hb.a_valid.value = 0
+        hb.b_valid.value = 0
+        hb.c_valid.value = 0
+
+    # clear state
+    hb.clr_n.value = 0
+    await RisingEdge(hb.clk)
+    hb.clr_n.value = 1
+    await RisingEdge(hb.clk)
 
 async def monitor(dut, cycles=50):
     hb = dut.hb_bus
@@ -155,12 +193,14 @@ async def test_top_mmacu_hb(dut):
         [1, 0, 19, 33],
         [5, 1, 2, 2],]
     
-    null_matrix = [[0 for _ in range(M)] for _ in range(1000)]
+    null_matrix = [[0 for _ in range(M)] for _ in range(M)]
     
     await drive_synced_ab_c(dut, A, B, C)
     await drive_synced_ab_c(dut, C, D, A)
-    await drive_synced_ab_c(dut, null_matrix, null_matrix, null_matrix)
-    
+    await drain_and_clear(dut, M, L)
+    await drive_synced_ab_c(dut, D, D, A)
+    await drain_and_clear(dut, M, L)
+
 
 
 
