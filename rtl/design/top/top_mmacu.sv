@@ -20,8 +20,8 @@ lb_if #(.M(M), .WIDTH_AB(WIDTH_AB), .WIDTH_CD(WIDTH_CD)) lb_bus ();
 generate
 if (MODE == "HB") begin : GEN_HB
         logic ab_ready;
-        assign lb_bus.a_ready = ab_ready;
-        assign lb_bus.b_ready = ab_ready;
+        assign hb_bus.a_ready = ab_ready;
+        assign hb_bus.b_ready = ab_ready;
 
         mmacu #(
         .M(M),
@@ -54,7 +54,6 @@ end else begin : GEN_LB
         logic ab_ready;
         assign lb_bus.a_ready = ab_ready;
         assign lb_bus.b_ready = ab_ready;
-
 
         mmacu #(
         .M(M),
