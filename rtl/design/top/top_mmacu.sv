@@ -19,6 +19,10 @@ lb_if #(.M(M), .WIDTH_AB(WIDTH_AB), .WIDTH_CD(WIDTH_CD)) lb_bus ();
 
 generate
 if (MODE == "HB") begin : GEN_HB
+        logic ab_ready;
+        assign lb_bus.a_ready = ab_ready;
+        assign lb_bus.b_ready = ab_ready;
+
         mmacu #(
         .M(M),
         .WIDTH_AB(WIDTH_AB),
@@ -27,26 +31,31 @@ if (MODE == "HB") begin : GEN_HB
         .i_clk(hb_bus.clk),
         .i_rst_n(hb_bus.rst_n),
         .i_clr_n(hb_bus.clr_n),
-        .i_sync_load(),
-        .i_load_init(),
+        .i_sync_load(1'b1),
+        .i_load_init(hb_bus.start),     
         .i_load_dim(hb_bus.dim),
         .i_c(hb_bus.c),
-        .i_c_valid(),
-        .o_c_ready(),
-        .o_load_done(),
-        .i_start(),
+        .i_c_valid(hb_bus.c_valid),
+        .o_c_ready(hb_bus.c_ready),
+        .o_load_done(),                 // leave dangling
+        .i_start(hb_bus.start),
         .i_a(hb_bus.a),
         .i_b(hb_bus.b),
-        .i_ab_valid(),
-        .o_ab_ready(),
-        .i_uload_dim(),
+        .i_ab_valid(hb_bus.a_valid && hb_bus.b_valid),
+        .o_ab_ready(ab_ready),
+        .i_uload_dim(hb_bus.dim),
         .o_d(hb_bus.d),
-        .o_d_valid(),
-        .i_d_ready(),
-        .o_uload_done()
+        .o_d_valid(hb_bus.d_valid),
+        .i_d_ready(hb_bus.d_ready),
+        .o_uload_done(hb_bus.done)
         );
 
 end else begin : GEN_LB
+        logic ab_ready;
+        assign lb_bus.a_ready = ab_ready;
+        assign lb_bus.b_ready = ab_ready;
+
+
         mmacu #(
         .M(M),
         .WIDTH_AB(WIDTH_AB),
@@ -61,17 +70,16 @@ end else begin : GEN_LB
         .i_c(),                 // leave dangling
         .i_c_valid(),           // leave dangling
         .o_c_ready(),           // leave dangling
-        .o_load_done(),
-        .i_start(),
+        .i_start(lb_bus.start),
         .i_a(lb_bus.a),
         .i_b(lb_bus.b),
-        .i_ab_valid(),
-        .o_ab_ready(),
-        .i_uload_dim(),
+        .i_ab_valid(lb_bus.a_valid && lb_bus.b_valid),
+        .o_ab_ready(ab_ready),
+        .i_uload_dim(lb_bus.dim),
         .o_d(lb_bus.d),
-        .o_d_valid(),
-        .i_d_ready(),
-        .o_uload_done()
+        .o_d_valid(lb_bus.d_valid),
+        .i_d_ready(lb_bus.d_ready),
+        .o_uload_done(lb_bus.done)
         );
 end
 endgenerate

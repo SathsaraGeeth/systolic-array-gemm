@@ -39,7 +39,7 @@ module mmacu #(
         i.  Sync  - can be used to load coupled load at the i_start for lower latency
         ii. Async - can be used to preload C to reduce memory bandwidth
     3. A/B and D streams are lockstep-synced. (A/B is synced to D)
-        - uArchitectuarly this introduce backpressure to the A/B and sycned C streams
+        - uArchitectuarly this introduce backpressure to the A/B and synced C streams
     */
 
     logic                       w_gstall_n;
@@ -73,12 +73,12 @@ module mmacu #(
     end
 
     always_comb begin
-        w_gstall_n      = !r_waiting2consume;   // backpressure
+        w_gstall_n      = !r_waiting2consume;                                          // backpressure
 
         o_ab_ready      = i_sync_load ? (w_gstall_n && 1/*w_load_en*/) : w_gstall_n;   // A/B stream is stalled only when globally stalled. (to maintain correctness).
         w_ab_en         = i_ab_valid && o_ab_ready;
 
-        o_c_ready       = i_sync_load ? (w_gstall_n && w_ab_en) : w_gstall_n;     // C is only stalled when when gloablly stalled. (to maintain correcteness).
+        o_c_ready       = i_sync_load ? (w_gstall_n && w_ab_en) : w_gstall_n;          // C is only stalled when when gloablly stalled. (to maintain correcteness).
         w_load_en       = i_c_valid && o_c_ready;
         o_load_done     = r_load_ctr == 0;
 
