@@ -45,10 +45,13 @@ async def reset(dut):
     hb.clr_n.value = 1
     await RisingEdge(hb.clk)
 
-async def drive_synced_ab_c(dut, A, B, C, M=M):
+
+async def drive_synced_ab_c(dut, A, B, C):
     hb = dut.hb_bus
 
-    for i in range(M):
+    n_rows = len(A)
+
+    for i in range(n_rows):
         # drive inputs
         hb.a.value = pack_row(A[i], WIDTH_AB)
         hb.b.value = pack_row(B[i], WIDTH_AB)
@@ -57,7 +60,7 @@ async def drive_synced_ab_c(dut, A, B, C, M=M):
         hb.dim.value = M
         hb.start.value = 1 if i == 0 else 0
 
-        # assert valids
+        # assert valid
         hb.a_valid.value = 1
         hb.b_valid.value = 1
         hb.c_valid.value = 1
@@ -73,7 +76,6 @@ async def drive_synced_ab_c(dut, A, B, C, M=M):
         hb.b_valid.value = 0
         hb.c_valid.value = 0
         hb.start.value = 0
-
 
 async def monitor(dut, cycles=50):
     hb = dut.hb_bus
@@ -129,7 +131,7 @@ async def test_top_mmacu_hb(dut):
     hb = dut.hb_bus
     cocotb.start_soon(gen_clk(hb.clk))
     await reset(dut)
-    cocotb.start_soon(monitor(dut, 2000))
+    cocotb.start_soon(monitor(dut, 40))
     A = [
         [1,2,3,4],
         [5,6,7,8],
@@ -148,21 +150,17 @@ async def test_top_mmacu_hb(dut):
         [9,10,11,12],
         [13,14,15,16]
     ]
-    D = [
-        [0, 4, 2, 2],
+    D = [[0, 4, 2, 2],
         [18,21,1, 2],
         [1, 0, 19, 33],
-        [5, 1, 2, 2]
-    ]
+        [5, 1, 2, 2],]
     
     null_matrix = [[0 for _ in range(M)] for _ in range(1000)]
     
-    await drive_synced_ab_c(dut, A, B, C, M)
-    await drive_synced_ab_c(dut, C, D, A, M)
-    await drive_synced_ab_c(dut, null_matrix, null_matrix, null_matrix, M)
-
-    for _ in range(10):  # flush the pipe
-        await RisingEdge(hb.clk)
+    await drive_synced_ab_c(dut, A, B, C)
+    await drive_synced_ab_c(dut, C, D, A)
+    await drive_synced_ab_c(dut, null_matrix, null_matrix, null_matrix)
+    
 
 
 
