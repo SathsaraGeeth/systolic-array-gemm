@@ -30,7 +30,7 @@ if (MODE == "HB") begin : GEN_HB
         .i_sync_load(),
         .i_load_init(),
         .i_load_dim(hb_bus.dim),
-        .i_c(),
+        .i_c(hb_bus.c),
         .i_c_valid(),
         .o_c_ready(),
         .o_load_done(),
@@ -52,23 +52,23 @@ end else begin : GEN_LB
         .WIDTH_AB(WIDTH_AB),
         .WIDTH_CD(WIDTH_CD)
         ) u_mmacu_lb (
-        .i_clk(hb_bus.clk),
-        .i_rst_n(hb_bus.rst_n),
-        .i_clr_n(hb_bus.clr_n),
-        .i_sync_load(),
-        .i_load_init(),
-        .i_load_dim(hb_bus.dim),
-        .i_c(hb_bus.c),
-        .i_c_valid(),
-        .o_c_ready(),
+        .i_clk(lb_bus.clk),
+        .i_rst_n(lb_bus.rst_n),
+        .i_clr_n(lb_bus.clr_n),
+        .i_sync_load(1'b0),
+        .i_load_init(),         // leave dangling
+        .i_load_dim(lb_bus.dim),
+        .i_c(),                 // leave dangling
+        .i_c_valid(),           // leave dangling
+        .o_c_ready(),           // leave dangling
         .o_load_done(),
         .i_start(),
-        .i_a(hb_bus.a),
-        .i_b(hb_bus.b),
+        .i_a(lb_bus.a),
+        .i_b(lb_bus.b),
         .i_ab_valid(),
         .o_ab_ready(),
         .i_uload_dim(),
-        .o_d(hb_bus.d),
+        .o_d(lb_bus.d),
         .o_d_valid(),
         .i_d_ready(),
         .o_uload_done()
