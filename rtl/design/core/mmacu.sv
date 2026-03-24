@@ -82,7 +82,7 @@ module mmacu #(
         w_load_en       = i_c_valid && o_c_ready;
         o_load_done     = r_load_ctr == 0;
 
-        o_uload_done    = (r_uload_ctr == i_load_dim);
+        o_uload_done    = (r_uload_ctr == i_uload_dim - 1);
     end
 
 
@@ -123,6 +123,7 @@ module mmacu #(
                         for (int j = 0; j < M; j++) begin
                             o_d[j*WIDTH_CD +: WIDTH_CD] <= wn_d[m][j];
                         end
+                        break;
                     end
                 end
             end else if (|w_uload_mask_vec && !i_d_ready) begin
