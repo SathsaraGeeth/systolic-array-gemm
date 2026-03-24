@@ -136,7 +136,7 @@ module mmacu #(
     generate
         for (i = 0; i < M; i++) begin : ROW
             for (j = 0; j < M; j++) begin : COL
-                mac10 #(WIDTH_AB, WIDTH_CD, M) u_mac (
+                mac20i #(WIDTH_AB, WIDTH_CD, M) u_mac (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
@@ -214,4 +214,4 @@ module mmacu #(
             end
         end
     endgenerate
-endmodule
+endmodule: mmacu

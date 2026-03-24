@@ -1,6 +1,4 @@
-// (mul-lat, add-lat)
-// (1, 0) mac
-module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4)(
+module mac20i #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4)(
     input  logic                    i_clk,
     input  logic                    i_rst_n,
     input  logic                    i_en,
@@ -125,36 +123,21 @@ module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4)
         .i_sel(w_s2_lane==1'b0),
         .o_data(o_d)
     );
-    
-    //////////////////////////////////////////////////////////
-    // Stage3 >>> ... 
-    //////////////////////////////////////////////////////////
-
 
 
     ///////////////////////////////////////////////
     // Decoupled Delay Pipe
-    // delay = m + 1 // how often want to switch
-    // We should design mac to support otherwise stalls needed
-    // this supports only fixed size matrices
-    // to extend for the variable case, the M+1 should be sz+1 and dynamic
-    // we have a strong assumption here that the mac latnecy > matrix dim
+    // [1] delay = dim + 1 // how often want to switch
+    // We should design mac to meet this otherwise stalls needed
+    // we strongly assume that, mac latnecy > matrix dim
     ///////////////////////////////////////////////
-    // delayed_pipe #(.WIDTH (1), .DEPTH (M+1)) u_delay_a (
-    //     .i_clk     (i_clk),
-    //     .i_rst_n   (i_rst_n),
-    //     .i_en      (i_en),
-    //     .i_clr_n   (i_clr_n),
-    //     .i_in      (i_start),
-    //     .o_out     (o_done)
-    // );
     delayed_pipev #(.WIDTH (1), .DEPTH (M+1), .M(M)) u_delay_v (
         .i_clk     (i_clk),
         .i_rst_n   (i_rst_n),
         .i_en      (i_en),
         .i_clr_n   (i_clr_n),
         .i_in      (i_start),
-        .i_ptr     (($clog2(M+1))'(i_dim + 1)),
+        .i_ptr     (($clog2(M+1))'(i_dim + 1)), // [1]
         .o_out     (o_done)
     );
 
