@@ -154,8 +154,12 @@ module mac10 #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4)
         .i_en      (i_en),
         .i_clr_n   (i_clr_n),
         .i_in      (i_start),
-        .i_ptr     (i_dim+1),
+        .i_ptr     (($clog2(M+1))'(i_dim + 1)),
         .o_out     (o_done)
     );
+
+    ///////////////////////////////////////////////
+    // Debug
+    ///////////////////////////////////////////////
 
 endmodule
