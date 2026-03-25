@@ -31,6 +31,7 @@ async def reset(dut):
     hb.clr_n.value = 0
 
     hb.start.value = 0
+    hb.last.value = 0
     hb.a_valid.value = 0
     hb.b_valid.value = 0
     hb.c_valid.value = 0
@@ -73,6 +74,7 @@ async def drive_hb(dut, list_A, list_B, C, dim, M):
                 hb.c_valid.value = 0
                 hb.start.value = 0
                 
+            hb.last.value = idx == len(list_A) - 1 and i == 0
 
             hb.dim.value = dim
 
@@ -92,6 +94,7 @@ async def drive_hb(dut, list_A, list_B, C, dim, M):
             hb.b_valid.value = 0
             hb.c_valid.value = 0
             hb.start.value = 0
+            hb.last.value = 0
 
 async def drain_and_clear(dut, dim, M, L=2, mul=1):
     hb = dut.hb_bus
@@ -111,6 +114,7 @@ async def drain_and_clear(dut, dim, M, L=2, mul=1):
         hb.b_valid.value = 1
         hb.c_valid.value = 1
         hb.start.value = i == 0
+        hb.last.value = i == total_cycles - dim - 1
         hb.dim.value = dim
 
         # wait handshake
@@ -123,6 +127,8 @@ async def drain_and_clear(dut, dim, M, L=2, mul=1):
         hb.a_valid.value = 0
         hb.b_valid.value = 0
         hb.c_valid.value = 0
+        hb.start.value = 0
+        hb.last.value = 0
 
     # clear state
     hb.clr_n.value = 0
@@ -154,48 +160,51 @@ async def collect_outputs(dut, dim, WIDTH_CD, storage):
 
 async def monitor(dut, cycles=50):
     hb = dut.hb_bus
+    try:
+        for i in range(cycles):
+            await RisingEdge(hb.clk)
 
-    for i in range(cycles):
-        await RisingEdge(hb.clk)
+            cocotb.log.info("\n" + "=" * 100)
+            cocotb.log.info(f"[Cycle {i}]")
 
-        cocotb.log.info("\n" + "=" * 100)
-        cocotb.log.info(f"[Cycle {i}]")
+            cocotb.log.info("Inputs:")
+            cocotb.log.info(f"  rst_n     = {int(hb.rst_n.value)}")
+            cocotb.log.info(f"  clr_n     = {int(hb.clr_n.value)}")
+            cocotb.log.info(f"  start     = {int(hb.start.value)}")
+            cocotb.log.info(f"  last      = {int(hb.last.value)}")
+            cocotb.log.info(f"  dim       = {int(hb.dim.value)}")
 
-        cocotb.log.info("Inputs:")
-        cocotb.log.info(f"  rst_n     = {int(hb.rst_n.value)}")
-        cocotb.log.info(f"  clr_n     = {int(hb.clr_n.value)}")
-        cocotb.log.info(f"  start     = {int(hb.start.value)}")
-        cocotb.log.info(f"  dim       = {int(hb.dim.value)}")
+            cocotb.log.info(f"  a_valid   = {int(hb.a_valid.value)}")
+            cocotb.log.info(f"  b_valid   = {int(hb.b_valid.value)}")
+            cocotb.log.info(f"  c_valid   = {int(hb.c_valid.value)}")
 
-        cocotb.log.info(f"  a_valid   = {int(hb.a_valid.value)}")
-        cocotb.log.info(f"  b_valid   = {int(hb.b_valid.value)}")
-        cocotb.log.info(f"  c_valid   = {int(hb.c_valid.value)}")
+            cocotb.log.info(f"  a         = {int(hb.a.value)}")
+            cocotb.log.info(f"  b         = {int(hb.b.value)}")
+            cocotb.log.info(f"  c         = {int(hb.c.value)}")
 
-        cocotb.log.info(f"  a         = {int(hb.a.value)}")
-        cocotb.log.info(f"  b         = {int(hb.b.value)}")
-        cocotb.log.info(f"  c         = {int(hb.c.value)}")
+            cocotb.log.info("Ready:")
+            cocotb.log.info(f"  a_ready   = {int(hb.a_ready.value)}")
+            cocotb.log.info(f"  b_ready   = {int(hb.b_ready.value)}")
+            cocotb.log.info(f"  c_ready   = {int(hb.c_ready.value)}")
 
-        cocotb.log.info("Ready:")
-        cocotb.log.info(f"  a_ready   = {int(hb.a_ready.value)}")
-        cocotb.log.info(f"  b_ready   = {int(hb.b_ready.value)}")
-        cocotb.log.info(f"  c_ready   = {int(hb.c_ready.value)}")
+            cocotb.log.info("Outputs:")
+            cocotb.log.info(f"  d_valid   = {int(hb.d_valid.value)}")
+            cocotb.log.info(f"  d_ready   = {int(hb.d_ready.value)}")
+            cocotb.log.info(f"  d         = {int(hb.d.value)}")
 
-        cocotb.log.info("Outputs:")
-        cocotb.log.info(f"  d_valid   = {int(hb.d_valid.value)}")
-        cocotb.log.info(f"  d_ready   = {int(hb.d_ready.value)}")
-        cocotb.log.info(f"  d         = {int(hb.d.value)}")
+            d_val = int(hb.d.value)
+            row = [(d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1) for j in range(dim)]
 
-        d_val = int(hb.d.value)
-        row = [(d_val >> (j * WIDTH_CD)) & ((1 << WIDTH_CD) - 1) for j in range(dim)]
+            cocotb.log.info(f"Decoded d = {row}")
 
-        cocotb.log.info(f"Decoded d = {row}")
-
-        cocotb.log.info("Raw handshake:")
-        cocotb.log.info(
-            f"  valid&ready A={int(hb.a_valid.value and hb.a_ready.value)} "
-            f"B={int(hb.b_valid.value and hb.b_ready.value)} "
-            f"C={int(hb.c_valid.value and hb.c_ready.value)}"
-        )
+            cocotb.log.info("Raw handshake:")
+            cocotb.log.info(
+                f"  valid&ready A={int(hb.a_valid.value and hb.a_ready.value)} "
+                f"B={int(hb.b_valid.value and hb.b_ready.value)} "
+                f"C={int(hb.c_valid.value and hb.c_ready.value)}"
+            )
+    except:
+        print("Monitor error")
 
 def pretty_print_matrices(matrices):
     print("\n" + "=" * 80)
@@ -292,7 +301,7 @@ async def test_top_mmacu_hb(dut):
     null_matrix = [[0 for _ in range(dim)] for _ in range(dim)]
 
     await drive_hb(dut, [A], [B], C, dim, M)
-    # await drive_hb(dut, [A, C], [B, C], C, dim, M)
+    await drive_hb(dut, [A, C], [B, C], C, dim, M)
     await drain_and_clear(dut, dim, M, L)
 
 

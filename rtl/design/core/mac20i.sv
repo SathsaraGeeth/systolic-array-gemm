@@ -4,6 +4,7 @@ module mac20i #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4
     input  logic                    i_en,
     input  logic                    i_clr_n,
     input  logic                    i_start,
+    input  logic                    i_last,
     input  logic [$clog2(M+1)-1:0]  i_dim,
     input  logic [WIDTH_AB-1:0]     i_a,
     input  logic [WIDTH_AB-1:0]     i_b,
@@ -136,7 +137,7 @@ module mac20i #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4
         .i_rst_n   (i_rst_n),
         .i_en      (i_en),
         .i_clr_n   (i_clr_n),
-        .i_in      (i_start),
+        .i_in      (i_last),
         .i_ptr     (($clog2(M+1))'(i_dim + 1)), // [1]
         .o_out     (o_done)
     );

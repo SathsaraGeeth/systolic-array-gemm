@@ -120,6 +120,23 @@ generate
         assign o_out = i_in;
     end else begin
         logic [WIDTH-1:0] r_d [DEPTH:0];
+
+        integer i;
+
+        always_ff @(posedge i_clk or negedge i_rst_n) begin
+            if (!i_rst_n) begin
+                for (i = 0; i <= DEPTH; i = i + 1)
+                    r_d[i] <= '0;
+            end else if (!i_clr_n) begin
+                for (i = 0; i <= DEPTH; i = i + 1)
+                    r_d[i] <= '0;
+            end else if (i_en) begin
+                r_d[0] <= i_in;
+                for (i = 0; i < DEPTH; i = i + 1)
+                    r_d[i+1] <= r_d[i];
+            end
+        end
+
         assign r_d[0] = i_in;
         genvar k;
         for (k = 0; k < DEPTH; k++) begin : DELAY
