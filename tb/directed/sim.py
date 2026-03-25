@@ -4,8 +4,8 @@ from cocotb_tools.runner import get_runner
 import os
 from pathlib import Path
 
-M = 8
-dim = 5
+M = 4
+dim = 4
 L = 2
 WIDTH_AB = 8
 WIDTH_CD = 16
@@ -49,36 +49,51 @@ async def reset(dut):
     await RisingEdge(hb.clk)
 
 
-async def drive_synced_ab_c(dut, A, B, C, dim, M):
+async def drive_hb(dut, list_A, list_B, C, dim, M):
     hb = dut.hb_bus
 
-    for i in range(dim):
-        # drive inputs
-        hb.a.value = pack_row_dim(A[i], WIDTH_AB, dim, M)
-        hb.b.value = pack_row_dim(B[i], WIDTH_AB, dim, M)
-        hb.c.value = pack_row_dim(C[i], WIDTH_CD, dim, M)
+    for idx, (A, B) in enumerate(zip(list_A, list_B)):
 
-        hb.dim.value = dim
-        hb.start.value = 1 if i == 0 else 0
+        for i in range(dim):
+            # drive inputs
+            hb.a.value = pack_row_dim(A[i], WIDTH_AB, dim, M)
+            hb.b.value = pack_row_dim(B[i], WIDTH_AB, dim, M)
 
-        # assert valid
-        hb.a_valid.value = 1
-        hb.b_valid.value = 1
-        hb.c_valid.value = 1
+            # C only on first cycle of first block
+            if idx == 0 and i == 0:
+                hb.c.value = pack_row_dim(C[i], WIDTH_CD, dim, M)
+                hb.c_valid.value = 1
+                hb.start.value = 1
+            elif idx == 0:
+                hb.c.value = pack_row_dim(C[i], WIDTH_CD, dim, M)
+                hb.c_valid.value = 1
+                hb.start.value = 0
+            else:
+                hb.c.value = 0
+                hb.c_valid.value = 0
+                hb.start.value = 0
+                
 
-        # wait for handshake
-        while True:
-            await RisingEdge(hb.clk)
-            if (hb.a_ready.value and hb.b_ready.value and hb.c_ready.value):
-                break
+            hb.dim.value = dim
 
-        # deassert valids
-        hb.a_valid.value = 0
-        hb.b_valid.value = 0
-        hb.c_valid.value = 0
-        hb.start.value = 0
+            hb.a_valid.value = 1
+            hb.b_valid.value = 1
 
-async def drain_and_clear(dut, dim, M, L=2):
+            # wait for handshake
+            while True:
+                await RisingEdge(hb.clk)
+                if hb.a_ready.value and hb.b_ready.value and (
+                    hb.c_ready.value if hb.c_valid.value else 1
+                ):
+                    break
+
+            # deassert valids
+            hb.a_valid.value = 0
+            hb.b_valid.value = 0
+            hb.c_valid.value = 0
+            hb.start.value = 0
+
+async def drain_and_clear(dut, dim, M, L=2, mul=1):
     hb = dut.hb_bus
 
     zero_ab = [0] * M
@@ -203,98 +218,85 @@ def pretty_print_matrices(matrices):
 @cocotb.test()
 async def test_top_mmacu_hb(dut):
     hb = dut.hb_bus
-    DEBUG = False
+    DEBUG = True
     cocotb.start_soon(gen_clk(hb.clk))
     await reset(dut)
     cocotb.start_soon(monitor(dut, 40)) if DEBUG else 1+1
     outputs = dict()
     cocotb.start_soon(collect_outputs(dut, dim, WIDTH_CD, outputs))
 
+    A = [
+        [1,2,3,4],
+        [5,6,7,8],
+        [9,10,11,12],
+        [13,14,15,16]
+    ]
+    B = [
+        [1,4,2,2],
+        [8,11,13,2],
+        [1,0,1,3],
+        [5,5,2,2]
+    ]
+    C = [
+        [1,2,3,4],
+        [5,6,7,8],
+        [9,10,11,12],
+        [13,14,15,16]
+    ]
+    D = [[0, 4, 2, 2],
+        [18,21,1, 2],
+        [1, 0, 19, 33],
+        [5, 1, 2, 2],]
+
     # A = [
-    #     [1,2,3,4],
-    #     [5,6,7,8],
-    #     [9,10,11,12],
-    #     [13,14,15,16]
+    # [1,2,3,4,5,6,7,8],
+    # [9,10,11,12,13,14,15,16],
+    # [17,18,19,20,21,22,23,24],
+    # [25,26,27,28,29,30,31,32],
+    # [33,34,35,36,37,38,39,40],
+    # [41,42,43,44,45,46,47,48],
+    # [49,50,51,52,53,54,55,56],
+    # [57,58,59,60,61,62,63,64]
     # ]
     # B = [
-    #     [1,4,2,2],
-    #     [8,11,13,2],
-    #     [1,0,1,3],
-    #     [5,5,2,2]
+    #     [1,0,2,1,3,2,4,1],
+    #     [2,1,3,2,4,3,5,2],
+    #     [3,2,4,3,5,4,6,3],
+    #     [4,3,5,4,6,5,7,4],
+    #     [5,4,6,5,7,6,8,5],
+    #     [6,5,7,6,8,7,9,6],
+    #     [7,6,8,7,9,8,10,7],
+    #     [8,7,9,8,10,9,11,8]
     # ]
     # C = [
-    #     [1,2,3,4],
-    #     [5,6,7,8],
-    #     [9,10,11,12],
-    #     [13,14,15,16]
+    #     [1,1,1,1,1,1,1,1],
+    #     [2,2,2,2,2,2,2,2],
+    #     [3,3,3,3,3,3,3,3],
+    #     [4,4,4,4,4,4,4,4],
+    #     [5,5,5,5,5,5,5,5],
+    #     [6,6,6,6,6,6,6,6],
+    #     [7,7,7,7,7,7,7,7],
+    #     [8,8,8,8,8,8,8,8]
     # ]
-    # D = [[0, 4, 2, 2],
-    #     [18,21,1, 2],
-    #     [1, 0, 19, 33],
-    #     [5, 1, 2, 2],]
+    # D = [
+    #     [0,1,2,3,4,5,6,7],
+    #     [7,6,5,4,3,2,1,0],
+    #     [1,3,5,7,9,11,13,15],
+    #     [2,4,6,8,10,12,14,16],
+    #     [3,6,9,12,15,18,21,24],
+    #     [4,8,12,16,20,24,28,32],
+    #     [5,10,15,20,25,30,35,40],
+    #     [6,12,18,24,30,36,42,48]
+    # ]
 
-
-    A = [
-    [1,2,3,4,5,6,7,8],
-    [9,10,11,12,13,14,15,16],
-    [17,18,19,20,21,22,23,24],
-    [25,26,27,28,29,30,31,32],
-    [33,34,35,36,37,38,39,40],
-    [41,42,43,44,45,46,47,48],
-    [49,50,51,52,53,54,55,56],
-    [57,58,59,60,61,62,63,64]
-]
-
-    B = [
-        [1,0,2,1,3,2,4,1],
-        [2,1,3,2,4,3,5,2],
-        [3,2,4,3,5,4,6,3],
-        [4,3,5,4,6,5,7,4],
-        [5,4,6,5,7,6,8,5],
-        [6,5,7,6,8,7,9,6],
-        [7,6,8,7,9,8,10,7],
-        [8,7,9,8,10,9,11,8]
-    ]
-
-    C = [
-        [1,1,1,1,1,1,1,1],
-        [2,2,2,2,2,2,2,2],
-        [3,3,3,3,3,3,3,3],
-        [4,4,4,4,4,4,4,4],
-        [5,5,5,5,5,5,5,5],
-        [6,6,6,6,6,6,6,6],
-        [7,7,7,7,7,7,7,7],
-        [8,8,8,8,8,8,8,8]
-    ]
-
-    D = [
-        [0,1,2,3,4,5,6,7],
-        [7,6,5,4,3,2,1,0],
-        [1,3,5,7,9,11,13,15],
-        [2,4,6,8,10,12,14,16],
-        [3,6,9,12,15,18,21,24],
-        [4,8,12,16,20,24,28,32],
-        [5,10,15,20,25,30,35,40],
-        [6,12,18,24,30,36,42,48]
-    ]
-
-    
     null_matrix = [[0 for _ in range(dim)] for _ in range(dim)]
-    
-    await drive_synced_ab_c(dut, A, B, C, dim, M)
+
+    await drive_hb(dut, [A], [B], C, dim, M)
+    # await drive_hb(dut, [A, C], [B, C], C, dim, M)
     await drain_and_clear(dut, dim, M, L)
-    await drive_synced_ab_c(dut, C, D, A, dim, M)
-    await drain_and_clear(dut, dim, M, L)
-    await drive_synced_ab_c(dut, D, D, A, dim, M)
-    await drain_and_clear(dut, dim, M, L)
+
 
     pretty_print_matrices(outputs)
-
-
-
-
-
-
 
 
 def run():
