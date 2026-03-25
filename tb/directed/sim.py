@@ -113,6 +113,8 @@ async def drain_and_clear(dut, dim, M, L=2, mul=1):
         hb.a_valid.value = 1
         hb.b_valid.value = 1
         hb.c_valid.value = 1
+        hb.start.value = 0
+        hb.last.value = 0
         hb.start.value = i == 0
         hb.last.value = i == total_cycles - dim - 1
         hb.dim.value = dim
@@ -301,9 +303,11 @@ async def test_top_mmacu_hb(dut):
     null_matrix = [[0 for _ in range(dim)] for _ in range(dim)]
 
     await drive_hb(dut, [A], [B], C, dim, M)
+    await drain_and_clear(dut, dim, M, L)
+    await drive_hb(dut, [A, C], [B, C], C, dim, M)
+    await drive_hb(dut, [A], [B], C, dim, M)
     await drive_hb(dut, [A, C], [B, C], C, dim, M)
     await drain_and_clear(dut, dim, M, L)
-
 
     pretty_print_matrices(outputs)
 

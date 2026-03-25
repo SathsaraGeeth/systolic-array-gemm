@@ -8,7 +8,7 @@
 */
 
 module top_mmacu #(
-        parameter int M        = 8,
+        parameter int M        = 4,
         parameter int WIDTH_AB = 8,
         parameter int WIDTH_CD = 16, // change to 32
         parameter     MODE     = "HB"
