@@ -11,6 +11,8 @@ A basic simulation can be found at:
 TODO:
     - Profile.
     - Proper Verification.
+BUGS:
+    - The tb driver has to fixed for continous transcations in dynamic-varaible-dimenstion mode.
 
 
 
