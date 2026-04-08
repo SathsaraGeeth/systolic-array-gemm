@@ -8,6 +8,7 @@ interface hb_if #(
     logic                   clr_n;
 
     logic                   start;
+    logic                   last;
     logic                   done;
     logic [$clog2(M+1)-1:0] dim;
 

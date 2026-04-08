@@ -282,7 +282,7 @@ async def test_top_mmacu_hb(dut):
     null_matrix = [[0 for _ in range(dim)] for _ in range(dim)]
     
     await drive_synced_ab_c(dut, A, B, C, dim, M)
-    # await drain_and_clear(dut, dim, M, L)
+    await drain_and_clear(dut, dim, M, L)
     await drive_synced_ab_c(dut, C, D, A, dim, M)
     await drain_and_clear(dut, dim, M, L)
     await drive_synced_ab_c(dut, D, D, A, dim, M)

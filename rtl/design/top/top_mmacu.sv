@@ -8,7 +8,7 @@
 */
 
 module top_mmacu #(
-        parameter int M        = 8,
+        parameter int M        = 4,
         parameter int WIDTH_AB = 8,
         parameter int WIDTH_CD = 16, // change to 32
         parameter     MODE     = "HB"
@@ -39,6 +39,7 @@ if (MODE == "HB") begin : GEN_HB
         .o_c_ready(hb_bus.c_ready),
         .o_load_done(),                 // leave dangling
         .i_start(hb_bus.start),
+        .i_last(hb_bus.last),
         .i_a(hb_bus.a),
         .i_b(hb_bus.b),
         .i_ab_valid(hb_bus.a_valid && hb_bus.b_valid),
@@ -70,6 +71,7 @@ end else begin : GEN_LB
         .i_c_valid(),           // leave dangling
         .o_c_ready(),           // leave dangling
         .i_start(lb_bus.start),
+        .i_last(lb_bus.last),
         .i_a(lb_bus.a),
         .i_b(lb_bus.b),
         .i_ab_valid(lb_bus.a_valid && lb_bus.b_valid),

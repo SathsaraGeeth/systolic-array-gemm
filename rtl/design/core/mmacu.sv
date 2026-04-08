@@ -18,6 +18,7 @@ module mmacu #(
 
     // Compute phase
     input  logic                                    i_start,        // a pulse
+    input  logic                                    i_last,         // a pulse
     input  logic [M*WIDTH_AB-1:0]                   i_a,
     input  logic [M*WIDTH_AB-1:0]                   i_b,
     input  logic                                    i_ab_valid,
@@ -88,6 +89,7 @@ module mmacu #(
 
     // nets
     logic                         wn_start        [M][M];
+    logic                         wn_last         [M][M];
     logic [WIDTH_AB-1:0]          wn_a            [M][M];
     logic [WIDTH_AB-1:0]          wn_b            [M][M];
     logic [WIDTH_CD-1:0]          wn_c            [M][M];
@@ -142,6 +144,7 @@ module mmacu #(
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
                     .i_start   (wn_start[i][j]),
+                    .i_last    (wn_last[i][j]),
                     .i_dim     (i_load_dim),
                     .i_a       (wn_a[i][j]),
                     .i_b       (wn_b[i][j]),
@@ -149,58 +152,58 @@ module mmacu #(
                     .o_done    (wn_done[i][j]),
                     .o_d       (wn_d[i][j])
                 );
-                delayed_pipe #(.WIDTH (WIDTH_AB+1), .DEPTH (i+1)) u_delay_a (
+                delayed_pipe #(.WIDTH (WIDTH_AB+1+1), .DEPTH (i+1)) u_delay_a (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_in      ({i_a[i*WIDTH_AB +: WIDTH_AB], i_start}),
-                    .o_out     ({wn_a[i][0], wn_start[i][0]})
+                    .i_in      ({i_a[i*WIDTH_AB +: WIDTH_AB], i_start, i_last}),
+                    .o_out     ({wn_a[i][0], wn_start[i][0], wn_last[i][0]})
                 );
                 if (j==0) begin
-                register #(WIDTH_AB+1) u_shift_a (
+                register #(WIDTH_AB+1+1) u_shift_a (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_data    ({wn_a[i][0], wn_start[i][0]}),
-                    .o_data    ({wn_a[i][j], wn_start[i][j]})
+                    .i_data    ({wn_a[i][0], wn_start[i][0], wn_last[i][0]}),
+                    .o_data    ({wn_a[i][j], wn_start[i][j], wn_last[i][j]})
                 );
                 end else begin
-                    register #(WIDTH_AB+1) u_shift_a (
+                    register #(WIDTH_AB+1+1) u_shift_a (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_data    ({wn_a[i][j-1], wn_start[i][j-1]}),
-                    .o_data    ({wn_a[i][j], wn_start[i][j]})
+                    .i_data    ({wn_a[i][j-1], wn_start[i][j-1], wn_last[i][j-1]}),
+                    .o_data    ({wn_a[i][j], wn_start[i][j], wn_last[i][j]})
                 );
                 end
-                delayed_pipe #(.WIDTH (WIDTH_AB+1), .DEPTH (j+1)) u_delay_b (
+                delayed_pipe #(.WIDTH (WIDTH_AB+1+1), .DEPTH (j+1)) u_delay_b (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_in      ({i_b[j*WIDTH_AB +: WIDTH_AB], i_start}),
-                    .o_out     ({wn_b[0][j], wn_start[0][j]})
+                    .i_in      ({i_b[j*WIDTH_AB +: WIDTH_AB], i_start, i_last}),
+                    .o_out     ({wn_b[0][j], wn_start[0][j], wn_last[0][j]})
                 );
                 if (i==0) begin
-                register #(WIDTH_AB+1) u_shift_b (
+                register #(WIDTH_AB+1+1) u_shift_b (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_data    ({wn_b[0][j], wn_start[0][j]}),
-                    .o_data    ({wn_b[i][j], wn_start[i][j]})
+                    .i_data    ({wn_b[0][j], wn_start[0][j], wn_last[0][j]}),
+                    .o_data    ({wn_b[i][j], wn_start[i][j], wn_last[i][j]})
                 );
                 end else begin
-                register #(WIDTH_AB+1) u_shift_b (
+                register #(WIDTH_AB+1+1) u_shift_b (
                     .i_clk     (i_clk),
                     .i_rst_n   (i_rst_n),
                     .i_en      (w_ab_en),
                     .i_clr_n   (i_clr_n),
-                    .i_data    ({wn_b[i-1][j], wn_start[i-1][j]}),
-                    .o_data    ({wn_b[i][j], wn_start[i][j]})
+                    .i_data    ({wn_b[i-1][j], wn_start[i-1][j], wn_last[i-1][j]}),
+                    .o_data    ({wn_b[i][j], wn_start[i][j], wn_last[i][j]})
                 );
                 end
                 register #(WIDTH_CD) u_reg_c (
