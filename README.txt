@@ -12,6 +12,7 @@ TODO:
     - Profile.
     - Proper Verification.
 
+PYNQZ2 Implementation.
 
 
 ----------------------------------------

@@ -4,7 +4,7 @@ from cocotb_tools.runner import get_runner
 import os
 from pathlib import Path
 
-M = 4
+M = 8
 dim = 4
 L = 2
 WIDTH_AB = 8
@@ -307,6 +307,9 @@ async def test_top_mmacu_hb(dut):
     await drive_hb(dut, [A, C], [B, C], C, dim, M)
     await drive_hb(dut, [A], [B], C, dim, M)
     await drive_hb(dut, [A, C], [B, C], C, dim, M)
+    await drive_hb(dut, [A], [B], C, dim, M)
+    await drain_and_clear(dut, dim, M, L)
+    await drive_hb(dut, [A], [B], C, dim, M)
     await drain_and_clear(dut, dim, M, L)
 
     pretty_print_matrices(outputs)
