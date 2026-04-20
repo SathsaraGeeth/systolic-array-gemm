@@ -13,6 +13,7 @@ TODO:
     - Proper Verification.
 
 PYNQZ2 Implementation.
+    - HP port ps-pl ddr Implementation
 
 
 ----------------------------------------
