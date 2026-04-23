@@ -211,3 +211,29 @@ module circular_buffer #(
         end
     end
 endmodule
+
+module ctr #(
+    parameter int WIDTH  = 8
+)(
+    input  logic             i_clk,
+    input  logic             i_rst_n,
+    input  logic             i_start,
+    input  logic             i_en,
+    input  logic [WIDTH-1:0] i_target,
+    output logic             o_done
+    
+);
+    logic [WIDTH-1:0] r_count;
+    
+    assign o_done = (r_count == i_target);
+    
+    always_ff @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            r_count <= '0;
+        end else if (i_start) begin
+            r_count <= '0;
+        end else if (i_en && !o_done) begin
+            r_count <= r_count + 1'b1;
+        end
+    end
+endmodule
