@@ -155,3 +155,59 @@ generate
     end
 endgenerate
 endmodule
+
+module circular_buffer #(
+    parameter  DEPTH            = 8,
+    parameter  WIDTH            = 8
+) (
+    input   logic                           i_clk,
+    input   logic                           i_rst_n,
+    output  logic   [WIDTH-1:0]             o_head_data,
+    output  logic                           o_deq_ready,
+    input   logic                           i_deq_valid,    
+    input   logic   [WIDTH-1:0]             i_enq_tail_data,
+    input   logic                           i_enq_valid,
+    output  logic                           o_enq_ready,
+    output  logic                           o_full,
+    output  logic                           o_empty,
+    output  logic   [$clog2(DEPTH+1)-1:0]   o_level
+);  
+    logic   [WIDTH-1:0]     mem_buff    [0:DEPTH-1];
+    logic   [$clog2(DEPTH)-1:0]         r_head_ptr, r_tail_ptr;
+    logic   [$clog2(DEPTH+1)-1:0]       r_count;
+
+    always_comb begin
+        o_full              = (r_count == DEPTH);
+        o_empty             = (r_count == '0);
+        o_level             = r_count;
+        o_deq_ready         = !o_empty;
+        o_enq_ready         = !o_full;
+        o_head_data         = mem_buff[r_head_ptr];
+    end
+
+    always_ff @(posedge i_clk or negedge i_rst_n) begin
+        if (!i_rst_n) begin
+            r_head_ptr  <= '0;
+            r_tail_ptr  <= '0;
+            r_count     <= '0;
+        end else begin
+            case ({o_enq_ready & i_enq_valid, o_deq_ready & i_deq_valid})
+                2'b01: begin
+                    r_head_ptr              <= r_head_ptr + 1;
+                    r_count                 <= r_count    - 1;
+                end
+                2'b10: begin
+                    r_tail_ptr              <= r_tail_ptr + 1;
+                    r_count                 <= r_count    + 1;
+                    mem_buff[r_tail_ptr]    <= i_enq_tail_data;
+                end
+                2'b11:  begin
+                    r_head_ptr              <= r_head_ptr + 1;
+                    r_tail_ptr              <= r_tail_ptr + 1;
+                    mem_buff[r_tail_ptr]    <= i_enq_tail_data;
+                end
+                default: begin end
+            endcase
+        end
+    end
+endmodule
