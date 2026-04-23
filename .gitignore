@@ -1,7 +1,8 @@
 # -------------------------
-# Private
+# Private - untracked
 # -------------------------
 rtl/design/acc/
+
 
 # -------------------------
 # Simulation outputs
