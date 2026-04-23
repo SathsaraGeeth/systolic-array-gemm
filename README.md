@@ -70,7 +70,7 @@ A pipelined integer multiply accumulate unit used as the processing element insi
 | `i_rst_n`     | in        | Active-low async reset                   |
 | `i_clr_n`     | in        | Active-low pipeline clear (flush)        |
 | `i_dim`       | in        | Runtime matrix dimension                 |
-| `i_start`     | in        | First beat of the first block            |
+| `i_start`     | in        | First beat of a block                    |
 | `i_last`      | in        | First beat of the last block             |
 | `i_a`, `i_b`  | in        | Packed row vectors (`M × WIDTH_AB` bits) |
 | `i_ab_valid`  | in        | A/B input valid                          |
