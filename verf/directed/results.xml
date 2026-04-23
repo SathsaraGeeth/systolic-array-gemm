@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1776957807" />
+    <testcase name="test_mmacu" classname="tb_mmacu" file="/mnt/fileserver/prj/systolic_array_gemm/verf/directed/tb_mmacu.py" lineno="166" time="2.175469398498535" sim_time_ns="875.0" ratio_time="402.2120470202464" />
+  </testsuite>
+</testsuites>

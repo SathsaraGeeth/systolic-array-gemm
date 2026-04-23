@@ -1,7 +1,8 @@
 # -------------------------
-# Private - untracked
+# Private
 # -------------------------
-rtl/design/acc/
+rtl/acc/
+verf/directed/acc/
 
 
 # -------------------------
