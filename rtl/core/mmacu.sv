@@ -1,5 +1,6 @@
 module mmacu #(
         parameter int M        = 8,
+        parameter int L        = 2,        // MAC Latency
         parameter int WIDTH_AB = 8,
         parameter int WIDTH_CD = 16,
         parameter int WORD_W   = 64
@@ -131,8 +132,6 @@ module mmacu #(
                 end
             endcase
         end
-
-        localparam int L = 2;
 
         logic w_start_flush_ctr;
         logic w_done_flush;
