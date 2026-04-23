@@ -32,15 +32,17 @@ module mac20i #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4
 
     ///////////////////////////////////////////////
     // Stage 1 >>>
-    logic                w_s2_start;
-    logic [WIDTH_CD-1:0] w_s2_l0_acc;
-    logic [WIDTH_CD-1:0] w_s2_l1_acc;
-    logic                w_s2_lane;
-    logic [WIDTH_CD-1:0] w_s2_mulr;
-    logic [WIDTH_CD-1:0] w_s2_l0_add;
-    logic [WIDTH_CD-1:0] w_s2_l1_add;
+    logic                   w_s2_start;
+    logic [WIDTH_CD-1:0]    w_s2_l0_acc;
+    logic [WIDTH_CD-1:0]    w_s2_l1_acc;
+    logic                   w_s2_lane;
+    logic [WIDTH_CD-1:0]    w_s2_mulr;
+    logic [WIDTH_CD-1:0]    w_s2_l0_add;
+    logic [WIDTH_CD-1:0]    w_s2_l1_add;
     ///////////////////////////////////////////////
+    logic [2*WIDTH_AB-1:0]  w_mul_res;
 
+    assign w_s2_mulr = $signed(w_mul_res);
     assign w_s1_lane = (i_en && w_s1_start) ? (w_s2_lane ^ 1'b1) : w_s2_lane;
 
     mul_lat1 #(.IN_WIDTH(WIDTH_AB)) pr_s1_mulr(
@@ -50,7 +52,7 @@ module mac20i #(parameter WIDTH_AB = 8, parameter WIDTH_CD = 16, parameter M = 4
         .i_en(i_en),
         .i_data0(w_s1_a),
         .i_data1(w_s1_b),
-        .o_data(w_s2_mulr)
+        .o_data(w_mul_res)
     );
 
     register #(.WIDTH(1)) pr_s1_lane (

@@ -23,6 +23,7 @@ sim/*.wlf
 *.obj
 *.a
 *.out
+*.xml
 
 # -------------------------
 # Tool-specific
