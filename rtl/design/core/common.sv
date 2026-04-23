@@ -77,7 +77,7 @@ module mul_lat1 #(
         if (!i_rst_n || !i_clr_n) begin
             o_data <= '0;
         end else if (i_en) begin
-            o_data <= i_data0 * i_data1;
+            o_data <= $signed(i_data0) * $signed(i_data1)
         end
     end
 endmodule
@@ -97,7 +97,7 @@ module add_lat1 #(
         if (!i_rst_n || !i_clr_n) begin
             o_data <= '0;
         end else if (i_en) begin
-            o_data <= i_data0 + i_data1;
+            o_data <= $signed(i_data0) + $signed(i_data1)
         end
     end
 endmodule
