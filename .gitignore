@@ -60,7 +60,7 @@ modelsim.ini
 
 
 # -------------------------
-# Python
+# Verilator artifacts
 # -------------------------
-tb/directed/__pycache__/
-tb/directed/sim_build/
+verf/directed/__pycache__/
+verf/directed/sim_build/
